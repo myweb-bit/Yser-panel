@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rasoi Angan Family Restaurant | रसोई आंगन</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- AOS Scroll Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <!-- Firebase Realtime Database SDK (Singapore Region: asia-southeast1) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA3yHycCu57fZ8RdKCVVLVyImW01rKNXrg",
+            authDomain: "rasoi-angan.firebaseapp.com",
+            databaseURL: "https://rasoi-angan-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "rasoi-angan",
+            storageBucket: "rasoi-angan.firebasestorage.app",
+            messagingSenderId: "512587351978",
+            appId: "1:512587351978:web:5554efff781fd015d4cdd3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // 1. लाइव मेनू लोड करना
+        const menuRef = ref(db, 'menu_items');
+        onValue(menuRef, (snapshot) => {
+            const menuGrid = document.getElementById('menuGrid');
+            const data = snapshot.val();
+
+            if (!data) {
+                menuGrid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 50px 20px; color: #94a3b8; background: var(--bg-card); border-radius: 20px; border: var(--border-glow);">
+                        <i class="fa-solid fa-utensils" style="font-size: 2.2rem; color: var(--primary-gold); margin-bottom: 12px;"></i>
+                        <h3 style="color: #fff; margin-bottom: 6px; font-size: 1.2rem;">मेनू अपडेट हो रहा है</h3>
+                        <p style="font-size: 0.85rem;">एडमिन पैनल से नए व्यंजन जोड़े जाने पर यहाँ तुरंत लाइव दिखेंगे।</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            const keys = Object.keys(data).reverse();
+
+            keys.forEach((key) => {
+                const item = data[key];
+                const category = item.category || 'all';
+                const image = item.imageUrl || '';
+                const name = item.name || 'स्वादिष्ट व्यंजन';
+                const price = item.price || 0;
+                const desc = item.desc || '';
+
+                html += `
+                    <div class="card-3d menu-item ${category}" data-aos="fade-up" onmousemove="handleTilt(event, this)" onmouseleave="resetTilt(this)">
+                        ${image ? `
+                        <div class="card-img-wrap">
+                            <img src="${image}" alt="${name}" loading="lazy">
+                        </div>` : ''}
+                        <div class="card-body">
+                            <div class="card-title">${name}</div>
+                            ${desc ? `<p style="color: #a0a5b5; font-size: 0.85rem; margin-bottom: 12px;">${desc}</p>` : ''}
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                                <span class="card-price">₹${price}</span>
+                                <a href="tel:09572943514" class="btn-outline" style="padding: 6px 14px; font-size: 0.78rem;">
+                                    <i class="fa-solid fa-phone"></i> कॉल ऑर्डर
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            menuGrid.innerHTML = html;
+        }, (error) => {
+            console.error("Realtime DB Menu Error:", error);
+        });
+
+        // 2. लाइव रेस्टोरेंट गैलरी लोड करना
+        const photoRef = ref(db, 'restaurant_photos');
+        onValue(photoRef, (snapshot) => {
+            const galleryGrid = document.getElementById('galleryGrid');
+            if (!galleryGrid) return;
+            const data = snapshot.val();
+
+            if (!data) {
+                galleryGrid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px 20px; color: #94a3b8; background: var(--bg-card); border-radius: 20px; border: var(--border-glow);">
+                        <i class="fa-solid fa-camera-retro" style="font-size: 2rem; color: var(--primary-gold); margin-bottom: 10px;"></i>
+                        <h4 style="color: #fff; margin-bottom: 5px; font-size: 1.1rem;">गैलरी अपडेट हो रही है</h4>
+                        <p style="font-size: 0.82rem;">एडमिन पैनल से फोटो अपलोड होते ही यहाँ लाइव दिखेंगी।</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            const keys = Object.keys(data).reverse();
+
+            keys.forEach((key) => {
+                const photo = data[key];
+                html += `
+                    <div class="atmosphere-box" data-aos="fade-up">
+                        <img src="${photo.imageUrl}" alt="${photo.title || 'Restaurant Photo'}" loading="lazy">
+                        <div class="atmosphere-overlay">
+                            <h4 style="font-family: 'Cinzel Decorative', cursive;">${photo.title || 'रसोई आंगन'}</h4>
+                            <span style="color: var(--primary-gold); font-size: 0.82rem;">${photo.tag || 'रेस्टोरेंट दृश्य'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            galleryGrid.innerHTML = html;
+        }, (error) => {
+            console.error("Realtime DB Gallery Error:", error);
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary-gold: #ffcf40;
+            --gold-gradient: linear-gradient(135deg, #ffe066 0%, #d4af37 50%, #aa7c11 100%);
+            --glow-color: rgba(255, 207, 64, 0.4);
+            --bg-deep: #050608;
+            --bg-card: rgba(20, 23, 31, 0.75);
+            --border-glow: 1px solid rgba(255, 207, 64, 0.25);
+            --text-light: #f8f9fa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-light);
+            overflow-x: hidden;
+        }
+
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 72px;
+            padding: 0 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(5, 6, 8, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            border-bottom: var(--border-glow);
+        }
+
+        .logo {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 1.25rem;
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 25px;
+        }
+
+        nav a {
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--primary-gold);
+        }
+
+        .header-btns {
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-call {
+            padding: 8px 18px;
+            border-radius: 30px;
+            background: rgba(255, 207, 64, 0.08);
+            border: 1px solid var(--primary-gold);
+            color: var(--primary-gold);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .btn-call:hover {
+            background: var(--gold-gradient);
+            color: #000;
+            box-shadow: 0 0 15px var(--glow-color);
+        }
+
+        .btn-outline {
+            padding: 10px 22px;
+            border-radius: 30px;
+            background: transparent;
+            border: 1px solid var(--primary-gold);
+            color: var(--primary-gold);
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 207, 64, 0.15);
+            box-shadow: 0 0 15px var(--glow-color);
+        }
+
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 110px 6% 60px;
+            background: radial-gradient(circle at center, rgba(20, 23, 31, 0.7) 0%, rgba(5, 6, 8, 0.98) 100%);
+            z-index: 2;
+        }
+
+        .hero-text h1 {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: clamp(2.2rem, 7vw, 3.5rem);
+            line-height: 1.2;
+            margin-bottom: 18px;
+        }
+
+        .hero-text h1 span {
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 207, 64, 0.1);
+            border: var(--border-glow);
+            color: var(--primary-gold);
+            font-size: 0.78rem;
+            margin-bottom: 22px;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .section-header {
+            text-align: center;
+            margin: 70px 0 25px;
+            position: relative;
+            z-index: 2;
+            padding: 0 6%;
+        }
+
+        .section-header h2 {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: clamp(1.8rem, 5vw, 2.4rem);
+            color: #fff;
+        }
+
+        .menu-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 35px;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 2;
+            padding: 0 6%;
+        }
+
+        .tab-btn {
+            padding: 7px 18px;
+            border-radius: 20px;
+            background: var(--bg-card);
+            border: var(--border-glow);
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.82rem;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--gold-gradient);
+            color: #000;
+            font-weight: 700;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 0 6%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-3d {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: var(--border-glow);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: transform 0.1s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .card-3d:hover {
+            box-shadow: 0 15px 35px rgba(255, 207, 64, 0.2);
+            border-color: var(--primary-gold);
+        }
+
+        /* फिक्स: फोटो अब कभी नहीं कटेगी (object-fit: contain + auto height) */
+        .card-img-wrap {
+            width: 100%;
+            height: 240px;
+            background: #090b10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border-bottom: 1px solid rgba(255, 207, 64, 0.1);
+        }
+
+        .card-img-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            transition: transform 0.4s ease;
+        }
+
+        .card-3d:hover .card-img-wrap img {
+            transform: scale(1.05);
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .card-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-gold);
+        }
+
+        /* गैलरी फोटो फिक्स */
+        .atmosphere-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 0 6%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .atmosphere-box {
+            border-radius: 18px;
+            overflow: hidden;
+            position: relative;
+            height: 250px;
+            background: #090b10;
+            border: var(--border-glow);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .atmosphere-box img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .atmosphere-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(5, 6, 8, 0.95) 15%, transparent 65%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            pointer-events: none;
+        }
+
+        .map-section {
+            padding: 80px 6%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .map-container-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: var(--border-glow);
+            border-radius: 22px;
+            padding: 28px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        .map-info h3 {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 1.6rem;
+            color: var(--primary-gold);
+            margin-bottom: 18px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .info-item i {
+            font-size: 1.3rem;
+            color: var(--primary-gold);
+            margin-top: 3px;
+        }
+
+        .map-iframe-wrap {
+            border-radius: 16px;
+            overflow: hidden;
+            border: var(--border-glow);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-height: 280px;
+        }
+
+        .map-iframe-wrap iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 280px;
+            border: 0;
+            filter: invert(90%) hue-rotate(180deg) contrast(1.2);
+        }
+
+        .reviews-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            padding: 0 6%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .review-card {
+            background: var(--bg-card);
+            border: var(--border-glow);
+            border-radius: 16px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .stars {
+            color: #ffc107;
+            margin-bottom: 10px;
+        }
+
+        .float-whatsapp {
+            position: fixed;
+            bottom: 24px;
+            left: 20px;
+            background: #25d366;
+            color: white;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 0 20px rgba(37, 211, 102, 0.5);
+            z-index: 1000;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: #020304;
+            border-top: var(--border-glow);
+            margin-top: 60px;
+            position: relative;
+            z-index: 2;
+            color: #777;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 900px) {
+            .map-container-box { grid-template-columns: 1fr; }
+            nav { display: none; }
+            .hero { padding-top: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Header Navigation -->
+    <header>
+        <a href="#home" class="logo">
+            <i class="fa-solid fa-crown"></i> Rasoi Angan
+        </a>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#menu">Menu</a></li>
+                <li><a href="#photos">Gallery</a></li>
+                <li><a href="#location">Location</a></li>
+                <li><a href="#reviews">Reviews</a></li>
+            </ul>
+        </nav>
+        <div class="header-btns">
+            <a href="tel:09572943514" class="btn-call">
+                <i class="fa-solid fa-phone"></i> Call Now
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-text" data-aos="fade-right" data-aos-duration="1200">
+            <div class="hero-badge">
+                <i class="fa-solid fa-star"></i> Open 24 Hours • 4.9 ★ (109+ Reviews)
+            </div>
+            <h1>Authentic Taste <span>At Rasoi Angan</span></h1>
+            <p style="color: #a0a5b5; margin-bottom: 25px; font-size: 1rem; max-width: 580px; line-height: 1.6;">
+                Experience the finest North Indian, Veg Biryani & South Indian Delicacies. Located near High School Overbridge, Bihta Sarmera Bypass Road, Lakhna.
+            </p>
+            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+                <a href="https://maps.app.goo.gl/Sj267QX5sgEmp9a86?g_st=ac" target="_blank" class="btn-outline">
+                    <i class="fa-solid fa-location-dot"></i> Get Directions
+                </a>
+                <a href="tel:09572943514" class="btn-outline">
+                    <i class="fa-solid fa-phone"></i> 095729 43514
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dynamic Menu Section (Singapore Realtime DB Connected) -->
+    <section id="menu">
+        <div class="section-header" data-aos="fade-up">
+            <p style="color: var(--primary-gold); letter-spacing: 2px; font-size: 0.8rem;">DISCOVER FLAVORS</p>
+            <h2>Our Live Menu</h2>
+            <p style="color: #64748b; font-size: 0.82rem; margin-top: 4px;">(Real-time updated directly from Admin Panel)</p>
+        </div>
+
+        <div class="menu-tabs" data-aos="fade-up">
+            <button class="tab-btn active" onclick="filterMenu('all')">All Specialities</button>
+            <button class="tab-btn" onclick="filterMenu('biryani')">Biryani & Mains</button>
+            <button class="tab-btn" onclick="filterMenu('south')">South Indian</button>
+            <button class="tab-btn" onclick="filterMenu('thali')">Royal Thali</button>
+        </div>
+
+        <div class="menu-grid" id="menuGrid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: #888;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.8rem; color: var(--primary-gold);"></i>
+                <p style="margin-top: 12px; font-size: 0.85rem;">मेनू लोड हो रहा है...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Restaurant Photo Gallery -->
+    <section id="photos" style="padding-top: 60px;">
+        <div class="section-header" data-aos="fade-up">
+            <p style="color: var(--primary-gold); letter-spacing: 2px; font-size: 0.8rem;">OUR AMBIENCE</p>
+            <h2>Restaurant Photo Gallery</h2>
+        </div>
+
+        <div class="atmosphere-grid" id="galleryGrid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px 0; color: #888;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.8rem; color: var(--primary-gold);"></i>
+                <p style="margin-top: 10px; font-size: 0.85rem;">गैलरी लोड हो रही है...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Google Maps Section -->
+    <section class="map-section" id="location">
+        <div class="section-header" data-aos="fade-up">
+            <p style="color: var(--primary-gold); letter-spacing: 2px; font-size: 0.8rem;">EASY TO VISIT</p>
+            <h2>Locate Us On Google Maps</h2>
+        </div>
+
+        <div class="map-container-box" data-aos="zoom-in" data-aos-duration="1000">
+            <div class="map-info">
+                <h3>Visit Rasoi Angan</h3>
+                
+                <div class="info-item">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <div>
+                        <strong style="color: #fff; font-size: 1rem;">Restaurant Address:</strong>
+                        <p style="color: #a0a5b5; font-size: 0.9rem; margin-top: 4px;">
+                            High school over bridge, Bihta Sarmera Bypass Road, se purav, Lakhna, Bihar 804453
+                        </p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <i class="fa-solid fa-clock"></i>
+                    <div>
+                        <strong style="color: #fff; font-size: 1rem;">Opening Hours:</strong>
+                        <p style="color: #a0a5b5; font-size: 0.9rem; margin-top: 4px;">Open 24 Hours (Monday - Sunday)</p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <i class="fa-solid fa-phone"></i>
+                    <div>
+                        <strong style="color: #fff; font-size: 1rem;">Contact Us:</strong>
+                        <p style="color: #a0a5b5; font-size: 0.9rem; margin-top: 4px;">+91 95729 43514</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <a href="https://maps.app.goo.gl/Sj267QX5sgEmp9a86?g_st=ac" target="_blank" class="btn-outline">
+                        <i class="fa-solid fa-diamond-turn-right"></i> Open in Google Maps
+                    </a>
+                </div>
+            </div>
+
+            <div class="map-iframe-wrap">
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14400!2d85.1200!3d25.5000!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39ed5f0000000000%3A0x0!2sLakhna%2C%20Bihar!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin" 
+                    allowfullscreen="" 
+                    loading="lazy" 
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section id="reviews" style="padding: 50px 0;">
+        <div class="section-header" data-aos="fade-up">
+            <p style="color: var(--primary-gold); letter-spacing: 2px; font-size: 0.8rem;">CUSTOMER TESTIMONIALS (4.9 ★)</p>
+            <h2>What Our Guests Say</h2>
+        </div>
+
+        <div class="reviews-grid">
+            <div class="review-card" data-aos="fade-up">
+                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                <p style="color:#a0a5b5; font-size:0.85rem; margin-bottom:12px;">"Rasoi Angan near Beldari Chowk / Lakhna Overbridge is a hidden gem! Child-friendly and best food in Lakhna."</p>
+                <strong style="color:var(--primary-gold); font-size:0.85rem;">- Vibhuti Bhushan</strong>
+            </div>
+
+            <div class="review-card" data-aos="fade-up" data-aos-delay="100">
+                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                <p style="color:#a0a5b5; font-size:0.85rem; margin-bottom:12px;">"Called them for dinner, no waiting and no tension! Food arrived super hot and fresh. Real authentic spices!"</p>
+                <strong style="color:var(--primary-gold); font-size:0.85rem;">- Aarti Sharma</strong>
+            </div>
+
+            <div class="review-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                <p style="color:#a0a5b5; font-size:0.85rem; margin-bottom:12px;">"Friendly staff and hygienic environment. Their Biryani and South Indian dishes are 10/10."</p>
+                <strong style="color:var(--primary-gold); font-size:0.85rem;">- Rahul Kumar</strong>
+            </div>
+        </div>
+    </section>
+
+    <!-- Floating WhatsApp Button -->
+    <a href="https://wa.me/919572943514?text=नमस्ते%20रसोई%20आंगन%20रेस्टोरेंट!" class="float-whatsapp" target="_blank">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+
+    <footer>
+        <p>© 2026 Rasoi Angan Family Restaurant, Lakhna. All Rights Reserved.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init();
+
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedY = Math.random() * 0.5 + 0.1;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            update() {
+                this.y -= this.speedY;
+                if (this.y < 0) {
+                    this.y = canvas.height;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 207, 64, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 45; i++) particles.push(new Particle());
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        function handleTilt(e, card) {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+            card.style.transform = `rotateY(${x / 18}deg) rotateX(${-y / 18}deg) translateY(-6px)`;
+        }
+
+        function resetTilt(card) {
+            card.style.transform = 'rotateY(0deg) rotateX(0deg) translateY(0px)';
+        }
+
+        function filterMenu(category) {
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const items = document.querySelectorAll('.menu-item');
+            items.forEach(item => {
+                if (category === 'all' || item.classList.contains(category)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
